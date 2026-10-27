@@ -1,0 +1,22 @@
+# Source data is downloaded separately from Kaggle and should not be committed.
+data/raw/*
+!data/raw/.gitkeep
+
+# Local query exports and Power BI inputs (regenerate locally)
+*.csv
+
+# Local logs, temporary work, and exports
+work/
+*.log
+*.bak
+*.tmp
+*.pbix~
+
+# Editor / OS files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Private CV and local deliverables
+outputs/
+~$*.pbix

@@ -1,0 +1,188 @@
+-- Power BI DAX measures used by the report.
+-- Create each measure under the corresponding imported table/model in Power BI Desktop.
+-- If your imported table names differ, replace them in the formulas.
+
+-- OVERVIEW
+Weighted AOV =
+DIVIDE(
+    SUM(monthly_sales[product_revenue]),
+    SUM(monthly_sales[delivered_orders])
+)
+
+-- COHORT RETENTION
+Retention % =
+DIVIDE(AVERAGE(cohort_retention[retention_pct]), 100)
+
+Number of Cohorts =
+DISTINCTCOUNT(cohort_retention[cohort_month])
+
+Total Cohort Customers =
+SUMX(
+    VALUES(cohort_retention[cohort_month]),
+    CALCULATE(MAX(cohort_retention[cohort_customers]))
+)
+
+Month 1 Retention % =
+VAR LastObservedMonth =
+    CALCULATE(
+        MAX(monthly_sales[purchase_month]),
+        REMOVEFILTERS(monthly_sales)
+    )
+VAR LastEligibleCohortMonth =
+    EDATE(LastObservedMonth, -1)
+VAR EligibleCohorts =
+    FILTER(
+        ALL(cohort_retention[cohort_month]),
+        cohort_retention[cohort_month] <= LastEligibleCohortMonth
+    )
+VAR ReturningCustomers =
+    CALCULATE(
+        SUM(cohort_retention[active_customers]),
+        REMOVEFILTERS(cohort_retention),
+        cohort_retention[months_since_first_order] = 1,
+        cohort_retention[cohort_month] <= LastEligibleCohortMonth
+    )
+VAR CustomersInEligibleCohorts =
+    SUMX(
+        EligibleCohorts,
+        CALCULATE(
+            MAX(cohort_retention[cohort_customers]),
+            REMOVEFILTERS(cohort_retention[months_since_first_order])
+        )
+    )
+RETURN
+    DIVIDE(COALESCE(ReturningCustomers, 0), CustomersInEligibleCohorts)
+
+Month 2 Retention % =
+VAR LastObservedMonth =
+    CALCULATE(
+        MAX(monthly_sales[purchase_month]),
+        REMOVEFILTERS(monthly_sales)
+    )
+VAR LastEligibleCohortMonth =
+    EDATE(LastObservedMonth, -2)
+VAR EligibleCohorts =
+    FILTER(
+        ALL(cohort_retention[cohort_month]),
+        cohort_retention[cohort_month] <= LastEligibleCohortMonth
+    )
+VAR ReturningCustomers =
+    CALCULATE(
+        SUM(cohort_retention[active_customers]),
+        REMOVEFILTERS(cohort_retention),
+        cohort_retention[months_since_first_order] = 2,
+        cohort_retention[cohort_month] <= LastEligibleCohortMonth
+    )
+VAR CustomersInEligibleCohorts =
+    SUMX(
+        EligibleCohorts,
+        CALCULATE(
+            MAX(cohort_retention[cohort_customers]),
+            REMOVEFILTERS(cohort_retention[months_since_first_order])
+        )
+    )
+RETURN
+    DIVIDE(COALESCE(ReturningCustomers, 0), CustomersInEligibleCohorts)
+
+Retention Curve % =
+VAR MonthOffset =
+    SELECTEDVALUE(cohort_retention[months_since_first_order])
+VAR LastObservedMonth =
+    CALCULATE(
+        MAX(monthly_sales[purchase_month]),
+        REMOVEFILTERS(monthly_sales)
+    )
+VAR LastEligibleCohortMonth =
+    EDATE(LastObservedMonth, -MonthOffset)
+VAR EligibleCohorts =
+    FILTER(
+        ALL(cohort_retention[cohort_month]),
+        cohort_retention[cohort_month] <= LastEligibleCohortMonth
+    )
+VAR ReturningCustomers =
+    CALCULATE(
+        SUM(cohort_retention[active_customers]),
+        REMOVEFILTERS(cohort_retention),
+        cohort_retention[months_since_first_order] = MonthOffset,
+        cohort_retention[cohort_month] <= LastEligibleCohortMonth
+    )
+VAR CustomersInEligibleCohorts =
+    SUMX(
+        EligibleCohorts,
+        CALCULATE(
+            MAX(cohort_retention[cohort_customers]),
+            REMOVEFILTERS(cohort_retention[months_since_first_order])
+        )
+    )
+RETURN
+    IF(
+        ISBLANK(MonthOffset),
+        BLANK(),
+        DIVIDE(COALESCE(ReturningCustomers, 0), CustomersInEligibleCohorts)
+    )
+
+-- RFM CUSTOMER SEGMENTATION
+Total Customers =
+DISTINCTCOUNT(rfm_segments[customer_unique_id])
+
+Repeat Customers =
+CALCULATE(
+    [Total Customers],
+    rfm_segments[frequency_orders] > 1
+)
+
+Repeat Customer % =
+DIVIDE([Repeat Customers], [Total Customers])
+
+High Value Customers =
+CALCULATE(
+    [Total Customers],
+    rfm_segments[customer_segment] = "High value"
+)
+
+Avg Product Spend per Customer =
+AVERAGE(rfm_segments[monetary_value])
+
+Avg Recency (Days) =
+AVERAGE(rfm_segments[recency_days])
+
+Product Revenue by Segment =
+SUM(rfm_segments[monetary_value])
+
+-- REVENUE PARETO
+Total Pareto Revenue =
+SUM(revenue_pareto[product_revenue])
+
+Top 1% Revenue Share =
+VAR CustomerCount =
+    CALCULATE(
+        DISTINCTCOUNT(revenue_pareto[customer_unique_id]),
+        REMOVEFILTERS(revenue_pareto)
+    )
+VAR CutoffRank = CEILING(CustomerCount * 0.01, 1)
+VAR RevenueFromTopCustomers =
+    CALCULATE(
+        SUM(revenue_pareto[product_revenue]),
+        FILTER(ALL(revenue_pareto), revenue_pareto[customer_rank] <= CutoffRank)
+    )
+VAR AllRevenue =
+    CALCULATE(SUM(revenue_pareto[product_revenue]), REMOVEFILTERS(revenue_pareto))
+RETURN
+    DIVIDE(RevenueFromTopCustomers, AllRevenue)
+
+Top 20% Revenue Share =
+VAR CustomerCount =
+    CALCULATE(
+        DISTINCTCOUNT(revenue_pareto[customer_unique_id]),
+        REMOVEFILTERS(revenue_pareto)
+    )
+VAR CutoffRank = CEILING(CustomerCount * 0.20, 1)
+VAR RevenueFromTopCustomers =
+    CALCULATE(
+        SUM(revenue_pareto[product_revenue]),
+        FILTER(ALL(revenue_pareto), revenue_pareto[customer_rank] <= CutoffRank)
+    )
+VAR AllRevenue =
+    CALCULATE(SUM(revenue_pareto[product_revenue]), REMOVEFILTERS(revenue_pareto))
+RETURN
+    DIVIDE(RevenueFromTopCustomers, AllRevenue)
