@@ -3,16 +3,11 @@
 An end-to-end analytics portfolio project using PostgreSQL, SQL, and Power BI on the Olist Brazilian E-Commerce Public Dataset. It explores sales performance, customer retention, RFM segments, customer revenue concentration, and the relationship between delivery delays and review scores.
 
 ## Dashboard
-![Olist sales overview dashboard](overview.png)
-
-![Olist cohort retention dashboard](cohort_retention.png)
-
-![Olist RFM segmentation dashboard](rfm.png)
-
-![Olist delivery performance dashboard](delivery.png)
-
-![Olist revenue Pareto dashboard](pareto.png)
-
+![Olist sales overview dashboard](overview.png.png)
+![Olist cohort retention dashboard](cohort_retention.png.png)
+![Olist RFM segmentation dashboard](rfm.png.png)
+![Olist delivery performance dashboard](delivery.png.png)
+![Olist revenue Pareto dashboard](pareto.png.png)
 The Power BI report contains five pages:
 
 1. **Overview** — delivered orders, product revenue, freight, weighted average order value, and monthly trends.
